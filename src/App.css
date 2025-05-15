@@ -1,38 +1,90 @@
-.App {
-  text-align: center;
+body {
+  background-color: #111;
+  color: white;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.app {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: auto;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.login {
+  max-width: 400px;
+  margin: 5rem auto;
+  background: #1c1c1c;
+  padding: 2rem;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  gap: 1rem;
+}
+
+.login input,
+.login button {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: none;
+}
+
+.login input {
+  background: #2a2a2a;
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.login button {
+  background-color: #1e90ff;
+  color: white;
+  cursor: pointer;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.login button:hover {
+  background-color: #0077e6;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: #222;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.card img {
+  width: 100%;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #333;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.card button {
+  background: #444;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.7rem;
+  margin: 0.3rem;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.card button:hover {
+  background: #666;
 }
