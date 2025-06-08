@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import ReactPlayer from "react-player";
 import "./App.css";
 
@@ -18,7 +18,8 @@ const App = () => {
     }
 
     try {
-      const m3uUrl = `${serverUrl}/get.php?username=${username}&password=${password}&type=m3u&output=ts`;
+      const cleanUrl = serverUrl.endsWith("/") ? serverUrl.slice(0, -1) : serverUrl;
+      const m3uUrl = `${cleanUrl}/get.php?username=${username}&password=${password}&type=m3u&output=ts`;
       const encodedUrl = encodeURIComponent(m3uUrl);
       const res = await fetch(`/api/proxy?url=${encodedUrl}`);
       const text = await res.text();
@@ -26,6 +27,7 @@ const App = () => {
       if (!res.ok) throw new Error("Failed to load playlist.");
 
       const parsedChannels = parseM3U(text);
+      if (parsedChannels.length === 0) throw new Error("No channels found.");
       setChannels(parsedChannels);
       setLoggedIn(true);
       localStorage.setItem("serverUrl", serverUrl);
@@ -39,22 +41,21 @@ const App = () => {
 
   const parseM3U = (m3uText) => {
     const lines = m3uText.split("\n");
-    const channels = [];
+    const parsed = [];
 
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].startsWith("#EXTINF")) {
-        const nameMatch = lines[i].match(/,(.*)$/);
+        const name = lines[i].split(",")[1] || "Unnamed Channel";
         const logoMatch = lines[i].match(/tvg-logo="(.*?)"/);
-        const name = nameMatch ? nameMatch[1] : "Unnamed Channel";
         const logo = logoMatch ? logoMatch[1] : "";
         const url = lines[i + 1];
-        if (url) {
-          channels.push({ name, logo, url });
+        if (url && url.startsWith("http")) {
+          parsed.push({ name, logo, url });
         }
       }
     }
 
-    return channels;
+    return parsed;
   };
 
   const handleLogout = () => {
@@ -72,22 +73,9 @@ const App = () => {
       {!loggedIn ? (
         <div className="login-container">
           <h1>Login to IPTV</h1>
-          <input
-            placeholder="http://example.com:port/"
-            value={serverUrl}
-            onChange={(e) => setServerUrl(e.target.value)}
-          />
-          <input
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <input
-            placeholder="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <input placeholder="http://example.com:port/" value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} />
+          <input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <button onClick={handleLogin}>Login</button>
           {error && <p className="error">{error}</p>}
         </div>
