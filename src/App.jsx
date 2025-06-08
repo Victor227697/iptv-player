@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import ReactPlayer from "react-player";
+import React, { useEffect, useRef, useState } from "react";
+import Hls from "hls.js";
 import "./App.css";
 
 const App = () => {
@@ -10,6 +10,18 @@ const App = () => {
   const [channels, setChannels] = useState([]);
   const [currentChannel, setCurrentChannel] = useState(null);
   const [error, setError] = useState("");
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (currentChannel && Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(currentChannel);
+      hls.attachMedia(videoRef.current);
+      return () => hls.destroy();
+    } else if (videoRef.current && videoRef.current.canPlayType("application/vnd.apple.mpegurl")) {
+      videoRef.current.src = currentChannel;
+    }
+  }, [currentChannel]);
 
   const handleLogin = async () => {
     if (!serverUrl || !username || !password) {
@@ -19,7 +31,7 @@ const App = () => {
 
     try {
       const cleanUrl = serverUrl.endsWith("/") ? serverUrl.slice(0, -1) : serverUrl;
-      const m3uUrl = `${cleanUrl}/get.php?username=${username}&password=${password}&type=m3u&output=ts`;
+      const m3uUrl = `${cleanUrl}/get.php?username=${username}&password=${password}&type=m3u&output=m3u8`;
       const encodedUrl = encodeURIComponent(m3uUrl);
       const res = await fetch(`/api/proxy?url=${encodedUrl}`);
       const text = await res.text();
@@ -49,7 +61,7 @@ const App = () => {
         const logoMatch = lines[i].match(/tvg-logo="(.*?)"/);
         const logo = logoMatch ? logoMatch[1] : "";
         const url = lines[i + 1];
-        if (url && url.startsWith("http")) {
+        if (url && url.endsWith(".m3u8")) {
           parsed.push({ name, logo, url });
         }
       }
@@ -87,7 +99,7 @@ const App = () => {
           </div>
           <div className="video-wrapper">
             {currentChannel ? (
-              <ReactPlayer url={currentChannel} playing controls width="100%" height="100%" />
+              <video ref={videoRef} controls autoPlay style={{ width: "100%" }} />
             ) : (
               <p>Select a channel</p>
             )}
