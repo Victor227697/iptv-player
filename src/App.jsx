@@ -3,9 +3,9 @@ import Hls from "hls.js";
 import "./App.css";
 
 const App = () => {
-  const [serverUrl, setServerUrl] = useState(localStorage.getItem("serverUrl") || "");
-  const [username, setUsername] = useState(localStorage.getItem("username") || "");
-  const [password, setPassword] = useState(localStorage.getItem("password") || "");
+  const [serverUrl, setServerUrl] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const [channels, setChannels] = useState([]);
   const [currentChannel, setCurrentChannel] = useState(null);
@@ -18,7 +18,7 @@ const App = () => {
       hls.loadSource(currentChannel);
       hls.attachMedia(videoRef.current);
       return () => hls.destroy();
-    } else if (videoRef.current && videoRef.current.canPlayType("application/vnd.apple.mpegurl")) {
+    } else if (videoRef.current?.canPlayType("application/vnd.apple.mpegurl")) {
       videoRef.current.src = currentChannel;
     }
   }, [currentChannel]);
@@ -31,53 +31,33 @@ const App = () => {
 
     try {
       const cleanUrl = serverUrl.endsWith("/") ? serverUrl.slice(0, -1) : serverUrl;
-      const m3uUrl = `${cleanUrl}/get.php?username=${username}&password=${password}&type=m3u&output=m3u8`;
-      const encodedUrl = encodeURIComponent(m3uUrl);
-      const res = await fetch(`/api/proxy?url=${encodedUrl}`);
+      const m3uUrl = `${cleanUrl}/get.php?username=${username}&password=${password}&type=m3u&output=ts`;
+      const res = await fetch(m3uUrl);
       const text = await res.text();
+      const parsed = parseM3U(text);
 
-      if (!res.ok) throw new Error("Failed to load playlist.");
-
-      const parsedChannels = parseM3U(text);
-      if (parsedChannels.length === 0) throw new Error("No channels found.");
-      setChannels(parsedChannels);
+      if (parsed.length === 0) throw new Error("No channels found.");
+      setChannels(parsed);
       setLoggedIn(true);
-      localStorage.setItem("serverUrl", serverUrl);
-      localStorage.setItem("username", username);
-      localStorage.setItem("password", password);
       setError("");
     } catch (err) {
       setError("Failed to load channels. Check your login and server URL.");
     }
   };
 
-  const parseM3U = (m3uText) => {
-    const lines = m3uText.split("\n");
+  const parseM3U = (text) => {
+    const lines = text.split("\n");
     const parsed = [];
-
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].startsWith("#EXTINF")) {
-        const name = lines[i].split(",")[1] || "Unnamed Channel";
+        const name = lines[i].split(",")[1] || "Unnamed";
         const logoMatch = lines[i].match(/tvg-logo="(.*?)"/);
         const logo = logoMatch ? logoMatch[1] : "";
         const url = lines[i + 1];
-        if (url && url.endsWith(".m3u8")) {
-          parsed.push({ name, logo, url });
-        }
+        if (url?.endsWith(".m3u8")) parsed.push({ name, logo, url });
       }
     }
-
     return parsed;
-  };
-
-  const handleLogout = () => {
-    localStorage.clear();
-    setServerUrl("");
-    setUsername("");
-    setPassword("");
-    setChannels([]);
-    setCurrentChannel(null);
-    setLoggedIn(false);
   };
 
   return (
@@ -85,29 +65,19 @@ const App = () => {
       {!loggedIn ? (
         <div className="login-container">
           <h1>Login to IPTV</h1>
-          <input placeholder="http://example.com:port/" value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} />
+          <input placeholder="Server URL" value={serverUrl} onChange={(e) => setServerUrl(e.target.value)} />
           <input placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
           <input placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <button onClick={handleLogin}>Login</button>
           {error && <p className="error">{error}</p>}
         </div>
       ) : (
-        <div className="player-container">
-          <div className="header">
-            <h2>Now Playing</h2>
-            <button onClick={handleLogout}>Logout</button>
-          </div>
-          <div className="video-wrapper">
-            {currentChannel ? (
-              <video ref={videoRef} controls autoPlay style={{ width: "100%" }} />
-            ) : (
-              <p>Select a channel</p>
-            )}
-          </div>
-          <div className="channel-grid">
-            {channels.map((ch, index) => (
-              <div key={index} className="channel-card" onClick={() => setCurrentChannel(ch.url)}>
-                {ch.logo && <img src={ch.logo} alt={ch.name} className="channel-logo" />}
+        <div className="player">
+          <video ref={videoRef} controls autoPlay style={{ width: "100%" }} />
+          <div className="channel-list">
+            {channels.map((ch, i) => (
+              <div key={i} onClick={() => setCurrentChannel(ch.url)} className="channel-card">
+                {ch.logo && <img src={ch.logo} alt={ch.name} />}
                 <span>{ch.name}</span>
               </div>
             ))}
